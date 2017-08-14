@@ -74,6 +74,24 @@ class Dof3MedianWidget(ScriptedLoadableModuleWidget):
     resultsFormLayout.addRow(self.medianPosYLabel, self.medianPosYValueLabel)
     resultsFormLayout.addRow(self.medianPosZLabel, self.medianPosZValueLabel)
 
+    # write data and results form
+    writeDataCollapsibleButton = ctk.ctkCollapsibleButton()
+    writeDataCollapsibleButton.text = "Write data from most recent trial to csv"
+    self.layout.addWidget(writeDataCollapsibleButton)
+    writeDataFormLayout = qt.QFormLayout(writeDataCollapsibleButton)
+
+    # field of view and positions text boxes
+    self.fileDirLabel = "Output Dir:"
+    self.fileDirTextBox = qt.QLineEdit()
+    self.fovLabel = "FOV Region"
+    self.fovTextBox = qt.QLineEdit()
+    self.posLabel = "Position"
+    self.posTextBox = qt.QLineEdit()
+
+    writeDataFormLayout.addRow(self.fileDirLabel, self.fileDirTextBox)
+    writeDataFormLayout.addRow(self.fovLabel, self.fovTextBox)
+    writeDataFormLayout.addRow(self.posLabel, self.posTextBox)
+
     # start button
     self.startButton = qt.QPushButton("Start Sample Collection")
     self.startButton.toolTip = "Collect a sample."
@@ -105,7 +123,11 @@ class Dof3MedianWidget(ScriptedLoadableModuleWidget):
     self.logic = Dof3MedianLogic()
     transformOfInterest = self.transformOfInterestSelector.currentNode()
     numPoints = self.numPointsSliderWidget.value
-    self.logic.run(transformOfInterest, numPoints, self.updateResultsGUI)
+    fileName = str(self.fileDirTextBox.text)
+    fov = str(self.fovTextBox.text)
+    position = str(self.posTextBox.text)
+    filestring = fileName + fov + position + ".csv"
+    self.logic.run(transformOfInterest, numPoints, filestring, self.updateResultsGUI)
 
   def onStop(self):
     self.logic.stop()
@@ -140,10 +162,26 @@ class Dof3MedianLogic(ScriptedLoadableModuleLogic):
 
   def outputResults(self):
     import numpy
+    import csv
+    # compute medians and show in GUI
     medianX = numpy.median(numpy.array(self.xPosList))
     medianY = numpy.median(numpy.array(self.yPosList))
     medianZ = numpy.median(numpy.array(self.zPosList))
     self.updateResultsGUI(medianX, medianY, medianZ)
+    # write data and medians to csv file
+    csv = open(self.filestring, "w")
+    csv.write("Point Index, X Pos, Y Pos, Z Pos\n")
+    for index in range(0, len(self.xPosList)):
+      x = self.xPosList[index]
+      y = self.yPosList[index]
+      z = self.zPosList[index]
+      row = "{:d},{:f},{:f},{:f}\n".format(index, x ,y, z)
+      csv.write(row)
+    csv.write("\n")
+    csv.write("Med X,{:f}\n".format(medianX))
+    csv.write("Med Y,{:f}\n".format(medianY))
+    csv.write("Med Z,{:f}".format(medianZ))
+    csv.close()
 
   def onTransformOfInterestNodeModified(self, observer, eventId):
     if (self.counter == self.numPoints):
@@ -156,12 +194,12 @@ class Dof3MedianLogic(ScriptedLoadableModuleLogic):
       self.xPosList.append(transformOfInterest.GetElement(0,3))
       self.yPosList.append(transformOfInterest.GetElement(1,3))
       self.zPosList.append(transformOfInterest.GetElement(2,3))
-      print(self.counter)
       self.counter += 1
 
-  def run(self, transformOfInterest, numPoints, updateResultsGUI):
+  def run(self, transformOfInterest, numPoints, filestring, updateResultsGUI):
     self.transformNodeObserverTags = []
     self.updateResultsGUI = updateResultsGUI
+    self.filestring = filestring
     self.transformOfInterestNode = transformOfInterest
     self.numPoints = numPoints
     self.counter = 0
