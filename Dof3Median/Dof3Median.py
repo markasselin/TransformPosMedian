@@ -83,12 +83,15 @@ class Dof3MedianWidget(ScriptedLoadableModuleWidget):
     # field of view and positions text boxes
     self.fileDirLabel = "Output Dir:"
     self.fileDirTextBox = qt.QLineEdit()
-    self.fovLabel = "FOV Region"
+    self.trackerLabel = "Tracker:"
+    self.trackerTextBox = qt.QLineEdit()
+    self.fovLabel = "FOV Region:"
     self.fovTextBox = qt.QLineEdit()
-    self.posLabel = "Position"
+    self.posLabel = "Position (#):"
     self.posTextBox = qt.QLineEdit()
 
     writeDataFormLayout.addRow(self.fileDirLabel, self.fileDirTextBox)
+    writeDataFormLayout.addRow(self.trackerLabel, self.trackerTextBox)
     writeDataFormLayout.addRow(self.fovLabel, self.fovTextBox)
     writeDataFormLayout.addRow(self.posLabel, self.posTextBox)
 
@@ -123,10 +126,11 @@ class Dof3MedianWidget(ScriptedLoadableModuleWidget):
     self.logic = Dof3MedianLogic()
     transformOfInterest = self.transformOfInterestSelector.currentNode()
     numPoints = self.numPointsSliderWidget.value
-    fileName = str(self.fileDirTextBox.text)
+    dirPath = str(self.fileDirTextBox.text)
+    tracker = str(self.trackerTextBox.text)
     fov = str(self.fovTextBox.text)
     position = str(self.posTextBox.text)
-    filestring = fileName + fov + position + ".csv"
+    filestring = dirPath + tracker + "_" + fov + position + ".csv"
     self.logic.run(transformOfInterest, numPoints, filestring, self.updateResultsGUI)
 
   def onStop(self):
@@ -170,6 +174,11 @@ class Dof3MedianLogic(ScriptedLoadableModuleLogic):
     self.updateResultsGUI(medianX, medianY, medianZ)
     # write data and medians to csv file
     csv = open(self.filestring, "w")
+    csv.write("DATA MEDIANS:\n")
+    csv.write("Med X,{:f}\n".format(medianX))
+    csv.write("Med Y,{:f}\n".format(medianY))
+    csv.write("Med Z,{:f}\n".format(medianZ))
+    csv.write("\nRAW DATA:\n")
     csv.write("Point Index, X Pos, Y Pos, Z Pos\n")
     for index in range(0, len(self.xPosList)):
       x = self.xPosList[index]
@@ -177,10 +186,6 @@ class Dof3MedianLogic(ScriptedLoadableModuleLogic):
       z = self.zPosList[index]
       row = "{:d},{:f},{:f},{:f}\n".format(index, x ,y, z)
       csv.write(row)
-    csv.write("\n")
-    csv.write("Med X,{:f}\n".format(medianX))
-    csv.write("Med Y,{:f}\n".format(medianY))
-    csv.write("Med Z,{:f}".format(medianZ))
     csv.close()
 
   def onTransformOfInterestNodeModified(self, observer, eventId):
