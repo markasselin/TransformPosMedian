@@ -20,7 +20,6 @@ include(${Slicer_USE_FILE})
 #-----------------------------------------------------------------------------
 # Extension modules
 add_subdirectory(Dof3Median)
-add_subdirectory(LinearityTesting)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

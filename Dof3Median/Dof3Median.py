@@ -107,10 +107,24 @@ class Dof3MedianWidget(ScriptedLoadableModuleWidget):
     self.stopButton.enabled = True
     self.layout.addWidget(self.stopButton)
 
+    # start endless button
+    self.startEndlessButton = qt.QPushButton("Start Endless Sample Collection")
+    self.startEndlessButton.toolTip = "Collect samples until stop button is pressed (or 20,000 samples is reached)."
+    self.startEndlessButton.enabled = True
+    self.layout.addWidget(self.startEndlessButton)
+
+    # stop endless button
+    self.stopEndlessButton = qt.QPushButton("Stop Endless Sample Collection")
+    self.stopEndlessButton.toolTip = "Stop collecting endless samples."
+    self.stopEndlessButton.enabled = True
+    self.layout.addWidget(self.stopEndlessButton)
+
     # connections
     self.startButton.connect('clicked(bool)', self.onStart)
     self.stopButton.connect('clicked(bool)', self.onStop)
-    
+    self.startEndlessButton.connect('clicked(bool)', self.onStartEndless)
+    self.stopEndlessButton.connect('clicked(bool)', self.onStopEndless)
+
     # Add vertical spacer
     self.layout.addStretch(1)
 
@@ -135,6 +149,22 @@ class Dof3MedianWidget(ScriptedLoadableModuleWidget):
 
   def onStop(self):
     self.logic.stop()
+
+  def onStartEndless(self):
+    self.logic = Dof3MedianLogic()
+    transformOfInterest = self.transformOfInterestSelector.currentNode()
+    numPoints = 20000
+    dirPath = str(self.fileDirTextBox.text)
+    tracker = str(self.trackerTextBox.text)
+    fov = str(self.fovTextBox.text)
+    position = str(self.posTextBox.text)
+    filestring = dirPath + tracker + "_" + fov + position + ".csv"
+    self.logic.run(transformOfInterest, numPoints, filestring, self.updateResultsGUI)
+
+  
+  def onStopEndless(self):
+    self.logic.stopEndless()
+
 
 #
 # Dof3MedianLogic
@@ -218,6 +248,11 @@ class Dof3MedianLogic(ScriptedLoadableModuleLogic):
 
   def stop(self):
     self.removeObservers()
+
+  def stopEndless(self):
+      print("end of points")
+      self.stop()
+      self.outputResults()
 
 
 class Dof3MedianTest(ScriptedLoadableModuleTest):
